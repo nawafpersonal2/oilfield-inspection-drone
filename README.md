@@ -1,8 +1,9 @@
-# FPV Inspection Drone — Gas Leak & Thermal Detection for Oil Fields
+# Oilfield Inspection Drone
 
-A custom-built FPV quadcopter carrying a gas sensor and a temperature sensor, designed to inspect oil field installations and detect gas leaks or abnormal heat before they become incidents. The frame is 3D printed and the sensor board is a custom PCB designed for this project.
+An FPV quadcopter built around **a flight controller I designed from scratch** — the SOWA F4 — carrying a gas sensor and a temperature sensor to inspect oil field installations and detect gas leaks or abnormal heat before they become incidents.
 
-<!-- TODO: replace with your best hero photo -->
+Everything except the off-the-shelf motors, ESC and radio gear was designed for this project: the flight controller PCB, the 3D printed airframe pod, and the sensor mounts.
+
 ![Assembled drone](media/images/hero.jpg)
 
 *[العربية](README.ar.md)*
@@ -11,113 +12,129 @@ A custom-built FPV quadcopter carrying a gas sensor and a temperature sensor, de
 
 ## Why
 
-Inspecting pipelines, flanges, valves and storage tanks in an oil field usually means sending a person into a hot, remote, and potentially hazardous area. A small drone can fly the same route in minutes, stream live video to the pilot, and read gas concentration and surface temperature at the same time — no one has to stand next to a possible leak.
+Inspecting pipelines, flanges, valves and storage tanks in an oil field usually means sending a person into a hot, remote and potentially hazardous area. A small drone can fly the same route in minutes, stream live video to the pilot, and read gas concentration and surface temperature at the same time — nobody has to stand next to a possible leak.
 
-## Features
+## The Flight Controller — SOWA F4 v1.0
 
-- Live FPV video to head-mounted goggles for close-range manual inspection
-- Gas sensing for combustible gas / hydrocarbon vapor detection
-- Temperature sensing to spot overheating equipment
-- Custom PCB carrying the sensors and their interface to the flight stack
-- Fully 3D printed frame and sensor mounts, designed around the electronics
-- Betaflight-based flight control, tuned for stable low-speed inspection flight
+The core of this project. A 4-layer 30.5×30.5 mm flight controller designed in EasyEDA, built around the STM32F405 and fully compatible with Betaflight.
 
-## Hardware
+![SOWA F4 board](media/images/pcb-3d.png)
 
-| Subsystem | Part | Notes |
+| Block | Part | Purpose |
 |---|---|---|
-| Flight controller | STM32 **F405** FC | Runs Betaflight |
-| Motor control | 4-in-1 **ESC** | <!-- TODO: current rating, e.g. 45A --> |
-| Motors | <!-- TODO: e.g. 2306 1700KV --> | |
-| Propellers | <!-- TODO: size/pitch --> | |
-| Video transmitter | **VTX** | <!-- TODO: 5.8 GHz, power output --> |
-| FPV camera | <!-- TODO: model --> | |
-| Goggles | <!-- TODO: model --> | Head-mounted, pilot view |
-| Radio link | Receiver + transmitter | <!-- TODO: protocol, e.g. ELRS / CRSF --> |
-| Gas sensor | <!-- TODO: e.g. MQ-2 / MQ-5 / MQ-135 --> | Analog output |
-| Temperature sensor | <!-- TODO: e.g. MLX90614 IR / DS18B20 --> | <!-- contact or non-contact? --> |
-| Sensor board | Custom PCB (see `hardware/pcb/`) | Designed in <!-- TODO: KiCad / EasyEDA / Altium --> |
-| Frame | 3D printed (see `hardware/frame/`) | <!-- TODO: material, e.g. PETG / ASA --> |
-| Battery | <!-- TODO: e.g. 4S 1500mAh LiPo --> | |
+| MCU | STM32F405RGT6 | Main processor, 168 MHz |
+| IMU | ICM-42688-P | Gyro + accelerometer, SPI |
+| Barometer | DPS310 | Altitude hold |
+| Blackbox | W25Q128 (16 MB) | Flight log storage |
+| OSD | AT7456E + 27 MHz crystal | Overlays telemetry on the video feed |
+| 5V rail | LMR16030 buck, 3.5 A | Peripherals, receiver, camera |
+| 10V rail | LMR16030 buck, 3.5 A | VTX supply |
+| 3.3V rail | AMS1117-3.3 | Logic |
+| Input range | 7–36 V (2S–8S) | With reverse polarity protection |
+| USB | Type-C | Configuration and flashing |
+| UARTs | 6 exposed | RX, VTX, GPS, telemetry |
+| ESC | 8-pin JHEMCU-standard connector | 4-in-1 ESC, S1–S4 + current sense |
 
-### Custom PCB
+The board also includes a hardware SBUS inverter, VBAT voltage divider for battery monitoring, a beeper driver, and an addressable LED output.
 
-<!-- TODO: 1–2 paragraphs: what the board does, power rails, how sensor data reaches the pilot -->
+**Full schematic:**
 
-![PCB](media/images/pcb.jpg)
+![Schematic](media/images/schematic.png)
 
-Source files, schematic, and Gerbers are in [`hardware/pcb/`](hardware/pcb/).
+Source files, Gerbers and BOM are in [`hardware/pcb/`](hardware/pcb/).
 
-### 3D Printed Frame
+## Wiring
 
-<!-- TODO: design intent — arm length, weight, sensor placement away from motor wash, print settings -->
+How the board connects to the rest of the aircraft:
 
-![Frame](media/images/frame.jpg)
+![Wiring diagram](media/images/wiring-diagram.png)
 
-STL and source CAD files are in [`hardware/frame/`](hardware/frame/).
+## Airframe
+
+The pod, canopy, sensor tower and bottom plate were modelled in Fusion 360 and printed on a Creality Ender 3 S1. The design places the gas sensor on top of the airframe, above and clear of the propeller wash, so it samples the surrounding air rather than the air the props are pushing down.
+
+<!-- TODO: material and print settings, e.g. PETG, 0.2 mm layer, 4 walls, 30% infill -->
+
+| CAD | Exploded parts |
+|---|---|
+| ![CAD](media/images/frame-cad.jpg) | ![Parts](media/images/frame-parts.png) |
+
+Printing in progress:
+
+![Printing](media/images/printing.png)
+
+STL and Fusion source files are in [`hardware/frame/`](hardware/frame/).
+
+## Sensors
+
+![Top view showing the gas sensor](media/images/drone-top.jpg)
+
+| Sensor | Part | Reads |
+|---|---|---|
+| Gas | MQ-series <!-- TODO: exact model, e.g. MQ-2 / MQ-5 --> | Combustible gas / hydrocarbon vapour, analog |
+| Temperature | <!-- TODO: model --> | <!-- TODO: contact or IR non-contact? --> |
+
+<!-- TODO: how the readings reach the pilot — OSD overlay, telemetry, or logged onboard? -->
+
+## Remaining Hardware
+
+| Subsystem | Part |
+|---|---|
+| Motors | <!-- TODO: e.g. 2207 1750KV --> |
+| ESC | 4-in-1, <!-- TODO: current rating --> |
+| Propellers | 5" tri-blade |
+| FPV camera | <!-- TODO: model --> |
+| VTX | 5.8 GHz, <!-- TODO: power --> |
+| Radio link | <!-- TODO: ELRS / Crossfire --> |
+| Goggles | <!-- TODO: model --> |
+| Battery | <!-- TODO: e.g. 4S 1500 mAh LiPo --> |
 
 ## Software
 
-Flight control runs on **Betaflight**. The full configuration is exported as a CLI dump so anyone can reproduce the exact setup:
+Flight control runs on **Betaflight**. The full configuration is exported as a CLI dump so the exact setup can be reproduced:
 
 ```bash
-# In Betaflight Configurator → CLI tab
+# Betaflight Configurator → CLI tab
 diff all        # inspect current config
 # to restore this build's config, paste the contents of:
 # firmware/betaflight/cli_dump.txt
 ```
-
-<!-- TODO: if the sensors run their own microcontroller firmware, describe it here and put the code in firmware/sensors/ -->
 
 ## Repository Structure
 
 ```
 .
 ├── hardware/
-│   ├── pcb/          # schematic, layout, Gerbers, BOM
-│   └── frame/        # CAD source + STL files for printing
+│   ├── pcb/          # EasyEDA source, schematic, Gerbers, BOM
+│   └── frame/        # Fusion 360 source + STL files
 ├── firmware/
-│   ├── betaflight/   # CLI dump, tuning notes
-│   └── sensors/      # sensor board firmware
+│   └── betaflight/   # CLI dump, tuning notes
 ├── docs/
-│   ├── wiring.md     # wiring diagram and pin mapping
-│   └── assembly.md   # build steps
+│   └── assembly.md   # build notes
 ├── media/
-│   ├── images/
-│   └── videos/
+│   └── images/
 └── README.md
 ```
 
-## Gallery
-
-<!-- TODO: add your photos here. For videos, see the note below. -->
-
-| | |
-|---|---|
-| ![](media/images/build-1.jpg) | ![](media/images/build-2.jpg) |
-| ![](media/images/field-test-1.jpg) | ![](media/images/field-test-2.jpg) |
-
-**Flight footage:** <!-- TODO: YouTube link — GitHub caps files at 100 MB, so host video externally and link it -->
-
 ## Safety
 
-- LiPo batteries: charge in a fire-safe bag, never charge unattended, never fly a puffed pack.
+- LiPo batteries: charge in a fire-safe bag, never unattended, never fly a puffed pack.
 - Props off whenever the battery is connected on the bench.
-- **This drone is not certified for hazardous/explosive atmospheres.** Heated-element gas sensors, brushless motors, and LiPo packs are all ignition sources. Treat it as a prototype and research platform — real deployment near live hydrocarbon leaks needs intrinsically safe (ATEX / IECEx) rated equipment.
-- Follow local UAV regulations (in Saudi Arabia, GACA registration and airspace rules) and get site permission before flying over any facility.
+- **This aircraft is not certified for hazardous or explosive atmospheres.** Heated-element gas sensors, brushless motors and LiPo packs are all ignition sources. Treat it as a prototype and research platform — real deployment near live hydrocarbon leaks requires intrinsically safe (ATEX / IECEx) rated equipment.
+- Follow local UAV regulations — in Saudi Arabia, GACA registration and airspace rules — and get site permission before flying over any facility.
 
 ## Roadmap
 
-- [ ] Telemetry overlay of gas/temperature readings on the FPV feed (OSD)
-- [ ] Data logging to onboard storage with timestamps
-- [ ] GPS + waypoint mission for repeatable inspection routes
+- [ ] Gas and temperature readings overlaid on the FPV feed via the onboard OSD
+- [ ] Timestamped data logging to the onboard flash
+- [ ] GPS and waypoint missions for repeatable inspection routes
 - [ ] Sensor calibration against a reference gas concentration
-- [ ] Enclosure sealing for dust and heat
+- [ ] v1.1 board revision <!-- TODO: any fixes found after assembling v1.0? -->
 
 ## License
 
-<!-- TODO: pick one — MIT for code, CERN-OHL-S for hardware, CC-BY-SA for docs is a common combo -->
+<!-- TODO: MIT for firmware, CERN-OHL-S for the hardware is a common pairing -->
 
 ## Author
 
-<!-- TODO: your name, LinkedIn, contact -->
+Nawaf Alghamdi <!-- TODO: LinkedIn / contact -->
